@@ -112,10 +112,3 @@ def download_with_tags(session_id: str, tags: TagData):
 
     return FileResponse(mp3_file, filename=f"{tags.title}.mp3")
 
-@app.get("/download")
-def download(youtube_url: str = Query(..., description="YouTube video link")):
-    """Legacy endpoint for direct download"""
-    info = download_audio(youtube_url)
-    mp3_file = get_output_file(info)
-    tag_mp3(mp3_file, info)
-    return FileResponse(mp3_file, filename=f"{info['title']}.mp3")
