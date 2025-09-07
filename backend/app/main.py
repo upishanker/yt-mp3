@@ -14,6 +14,8 @@ origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "https://yt-mp3-iota.vercel.app",
+    "https://yt-taggedmp3.fly.dev",
+
 ]
 
 app.add_middleware(
@@ -24,8 +26,9 @@ app.add_middleware(
     allow_headers=["*"],    # Allow all headers
 )
 
-DOWNLOADS_DIR = os.path.join(os.path.dirname(__file__), "..", "downloads")
-UPLOADS_DIR = os.path.join(os.path.dirname(__file__), "..", "uploads")
+# Use absolute paths for deployed environments
+DOWNLOADS_DIR = os.path.join(os.getcwd(), "downloads")
+UPLOADS_DIR = os.path.join(os.getcwd(), "uploads")
 os.makedirs(DOWNLOADS_DIR, exist_ok=True)
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 
@@ -42,24 +45,28 @@ class TagData(BaseModel):
 @app.get("/extract-info")
 def extract_info(youtube_url: str = Query(..., description="YouTube video link")):
     """Extract metadata from YouTube video with enhanced artist detection"""
-    info = download_audio(youtube_url)
-    session_id = str(uuid.uuid4())
+    try:
+        info = download_audio(youtube_url)
+        session_id = str(uuid.uuid4())
 
-    # Get enhanced metadata
-    enhanced_metadata = get_enhanced_metadata(info)
+        # Get enhanced metadata
+        enhanced_metadata = get_enhanced_metadata(info)
 
-    # Store session data
-    sessions[session_id] = {
-        'info': info,
-        'mp3_file': get_output_file(info)
-    }
+        # Store session data
+        sessions[session_id] = {
+            'info': info,
+            'mp3_file': get_output_file(info)
+        }
 
-    return {
-        'session_id': session_id,
-        'tags': enhanced_metadata,
-        'metadata_source': enhanced_metadata.get('source', 'basic'),
-        'confidence': enhanced_metadata.get('confidence', 'unknown')
-    }
+        return {
+            'session_id': session_id,
+            'tags': enhanced_metadata,
+            'metadata_source': enhanced_metadata.get('source', 'basic'),
+            'confidence': enhanced_metadata.get('confidence', 'unknown')
+        }
+    except Exception as e:
+        print(f"Error in extract_info: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to extract info: {str(e)}")
 @app.post("/upload-image/{session_id}")
 async def upload_image(session_id: str, file: UploadFile = File(...)):
     """Upload custom image for album art"""
@@ -86,29 +93,32 @@ async def upload_image(session_id: str, file: UploadFile = File(...)):
 @app.post("/download/{session_id}")
 def download_with_tags(session_id: str, tags: TagData):
     """Download MP3 with custom tags"""
-    if session_id not in sessions:
-        raise HTTPException(status_code=404, detail="Session not found")
+    try:
+        if session_id not in sessions:
+            raise HTTPException(status_code=404, detail="Session not found")
 
-    session_data = sessions[session_id]
-    mp3_file = session_data['mp3_file']
+        session_data = sessions[session_id]
+        mp3_file = session_data['mp3_file']
 
-    # Use uploaded image if available, otherwise use thumbnail URL
-    thumbnail_source = session_data.get('uploaded_image') or tags.thumbnail
+        # Use uploaded image if available, otherwise use thumbnail URL
+        thumbnail_source = session_data.get('uploaded_image') or tags.thumbnail
 
-    # Create custom info dict with user-provided tags
-    custom_info = {
-        'title': tags.title,
-        'uploader': tags.artist,
-        'album': tags.album,
-        'thumbnail': thumbnail_source
-    }
+        # Create custom info dict with user-provided tags
+        custom_info = {
+            'title': tags.title,
+            'uploader': tags.artist,
+            'album': tags.album,
+            'thumbnail': thumbnail_source
+        }
 
-    tag_mp3(mp3_file, custom_info)
+        tag_mp3(mp3_file, custom_info)
 
-    # Clean up session and uploaded file
-    if 'uploaded_image' in session_data and os.path.exists(session_data['uploaded_image']):
-        os.remove(session_data['uploaded_image'])
-    del sessions[session_id]
+        # Clean up session and uploaded file
+        if 'uploaded_image' in session_data and os.path.exists(session_data['uploaded_image']):
+            os.remove(session_data['uploaded_image'])
+        del sessions[session_id]
 
-    return FileResponse(mp3_file, filename=f"{tags.title}.mp3")
-
+        return FileResponse(mp3_file, filename=f"{tags.title}.mp3")
+    except Exception as e:
+        print(f"Error in download_with_tags: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to download: {str(e)}")
