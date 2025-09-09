@@ -1,4 +1,4 @@
-# YouTube to MP3 Converter
+# YouTube to Tagged MP3 Converter
 
 A full-stack application that downloads YouTube videos as MP3 files with enhanced metadata tagging and custom album art support.
 
