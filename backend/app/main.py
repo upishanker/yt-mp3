@@ -2,8 +2,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Query, HTTPException, UploadFile, File, Form
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from downloader import download_audio, get_output_file
-from tagger import tag_mp3, get_enhanced_metadata
+from .downloader import download_audio, get_output_file
+from .tagger import tag_mp3, get_enhanced_metadata
 import os
 import uuid
 import shutil
@@ -13,8 +13,7 @@ app = FastAPI()
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "https://yt-mp3-iota.vercel.app",
-    "https://yt-taggedmp3.fly.dev",
+    "http://localhost:3001",
 ]
 
 app.add_middleware(

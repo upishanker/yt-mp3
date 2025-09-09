@@ -31,8 +31,6 @@ export default function Home() {
   const [useUploadedImage, setUseUploadedImage] = useState(false);
   const [extractProgress, setExtractProgress] = useState(0);
 
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
-
   const simulateProgress = () => {
     setExtractProgress(0);
     const interval = setInterval(() => {
@@ -61,7 +59,7 @@ export default function Home() {
 
     try {
       const res = await fetch(
-          `${API_BASE_URL}/extract-info?youtube_url=${encodeURIComponent(url)}`
+          `http://127.0.0.1:8000/extract-info?youtube_url=${encodeURIComponent(url)}`
       );
       if (!res.ok) throw new Error("Failed to extract info");
 
@@ -113,7 +111,7 @@ export default function Home() {
         const formData = new FormData();
         formData.append('file', uploadedImage);
 
-        const uploadRes = await fetch(`${API_BASE_URL}/upload-image/${sessionId}`, {
+        const uploadRes = await fetch(`http://127.0.0.1:8000/upload-image/${sessionId}`, {
           method: 'POST',
           body: formData,
         });
@@ -122,7 +120,7 @@ export default function Home() {
       }
 
       // Download with tags
-      const res = await fetch(`${API_BASE_URL}/download/${sessionId}`, {
+      const res = await fetch(`http://127.0.0.1:8000/download/${sessionId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
