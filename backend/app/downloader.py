@@ -38,10 +38,7 @@ def download_audio(youtube_url: str) -> dict:
         raise Exception(f"Failed to download audio: {str(e)}")
 
 def get_output_file(info: dict) -> str:
-    """
-    Builds the path to the downloaded MP3 file.
-    """
     title = info["title"]
-    # Sanitize filename for cross-platform compatibility
-    safe_title = "".join(c for c in title if c.isalnum() or c in (' ', '-', '_')).rstrip()
+    # Use the same sanitization that yt-dlp uses
+    safe_title = yt_dlp.utils.sanitize_filename(title)
     return os.path.join(DOWNLOADS_DIR, f"{safe_title}.mp3")
